@@ -10,6 +10,8 @@ COPY app.py ./app.py
 COPY run.sh ./run.sh
 ARG EMBED_MODEL=text-embedding-3-small
 ENV MODEL=${EMBED_MODEL}
-RUN --mount=type=secret,id=openai     bash -lc 'export OPENAI_API_KEY=$(cat /run/secrets/openai) &&               python build_index_openai.py --chunks data/oasis_kb_chunks.csv --out_dir index_openai --model ${MODEL}'
+ARG OPENAI_API_KEY
+ENV OPENAI_API_KEY=${OPENAI_API_KEY}
+RUN python build_index_openai.py --chunks data/oasis_kb_chunks.csv --out_dir index_openai --model ${MODEL}
 EXPOSE 8000
 CMD ["./run.sh"]
