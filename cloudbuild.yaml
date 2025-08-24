@@ -1,0 +1,33 @@
+# cloudbuild.yaml for kb-retrieval
+# Builds and pushes to Artifact Registry. Injects OPENAI_API_KEY via Secret Manager.
+
+substitutions:
+  _REGION: us-central1
+  _REPO: containers
+  _IMAGE_NAME: kb-retrieval
+  _EMBED_MODEL: text-embedding-3-small
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    secretEnv: ['OPENAI_API_KEY']
+    args:
+      - -lc
+      - |
+        docker build \
+          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE_NAME}:$SHORT_SHA \
+          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE_NAME}:latest \
+          --build-arg OPENAI_API_KEY=$$OPENAI_API_KEY \
+          --build-arg EMBED_MODEL=${_EMBED_MODEL} \
+          .
+    # The OPENAI_API_KEY is injected into this step only
+    # and referenced as $$OPENAI_API_KEY so logs don't expand it.
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE_NAME}:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE_NAME}:latest
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/OPENAI_API_KEY/versions/latest
+      env: 'OPENAI_API_KEY'
